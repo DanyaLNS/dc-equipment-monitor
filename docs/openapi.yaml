@@ -1,0 +1,214 @@
+openapi: 3.0.3
+info:
+  title: DC Equipment Monitor API
+  description: REST API для учета и мониторинга оборудования в ЦОД.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+paths:
+  /auth/login:
+    post:
+      summary: Аутентификация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        "200":
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+        "401":
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /auth/me:
+    get:
+      summary: Получить текущего пользователя
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  username: { type: string }
+                  role: { type: string, enum: [admin, viewer] }
+
+  /racks:
+    get:
+      summary: Список стоек
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Список стоек
+    post:
+      summary: Создать стойку (только admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                location: { type: string }
+      responses:
+        "201": { description: Создано }
+        "403": { description: Доступ запрещен }
+
+  /equipment:
+    get:
+      summary: Список оборудования с фильтрами
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: rack_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: type
+          schema: { type: string }
+        - in: query
+          name: status
+          schema:
+            {
+              type: string,
+              enum: [available, unavailable, stale, not_checked, monitoring_disabled],
+            }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Список оборудования
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Equipment" }
+    post:
+      summary: Создать оборудование (только admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EquipmentCreate" }
+      responses:
+        "201": { description: Создано }
+        "409": { description: Инвентарный номер уже существует }
+
+  /equipment/{id}/history:
+    get:
+      summary: История проверок оборудования
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: История проверок
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CheckResult" }
+
+  /summary:
+    get:
+      summary: Сводные счётчики
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Сводка
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  available: { type: integer }
+                  unavailable: { type: integer }
+                  not_checked: { type: integer }
+                  monitoring_disabled: { type: integer }
+                  stale: { type: integer }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object }
+
+    EquipmentCreate:
+      type: object
+      required: [name, inventory_number, type, address, tcp_port, rack_id]
+      properties:
+        name: { type: string }
+        inventory_number: { type: string }
+        type: { type: string }
+        address: { type: string }
+        tcp_port: { type: integer, minimum: 1, maximum: 65535 }
+        rack_id: { type: string, format: uuid }
+        monitoring_enabled: { type: boolean, default: true }
+
+    Equipment:
+      allOf:
+        - $ref: "#/components/schemas/EquipmentCreate"
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            status:
+              {
+                type: string,
+                enum: [available, unavailable, stale, not_checked, monitoring_disabled],
+              }
+            last_checked_at: { type: string, format: date-time }
+
+    CheckResult:
+      type: object
+      properties:
+        id: { type: integer }
+        status: { type: string, enum: [available, unavailable] }
+        checked_at: { type: string, format: date-time }
+        error_reason: { type: string, nullable: true }
