@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v codex >/dev/null 2>&1; then
+  echo 'Codex CLI not found. Install it first: npm install -g @openai/codex' >&2
+  exit 127
+fi
+
+effort=low
+if [[ "${1:-}" == "--deep" ]]; then
+  effort=medium
+  shift
+fi
+
+# Explicit CLI overrides also work when project .codex/config.toml is not loaded.
+exec codex \
+  -c "model_reasoning_effort=\"${effort}\"" \
+  -c 'model_verbosity="low"' \
+  "$@"
