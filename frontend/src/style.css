@@ -1,0 +1,28 @@
+:root { color: #17283a; background: #f4f6f9; }
+body { margin: 0; min-width: 0; }
+button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid #176ab1; outline-offset: 3px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 14px clamp(12px, 3vw, 44px); background: #fff; border-bottom: 1px solid #dde4ed; }
+.toolbar strong, .account { overflow-wrap: anywhere; }
+nav, .account { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+nav a { padding: 6px 9px; border-radius: 5px; color: #234b72; text-decoration: none; }
+nav a:hover, nav a[aria-current] { background: #e8f0fa; }
+.content { max-width: 1600px; padding: clamp(12px, 3vw, 40px); margin: auto; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+.heading { display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+h1, h2 { margin: 0; overflow-wrap: anywhere; }
+h1 { font-size: clamp(24px, 3vw, 34px); }
+h2 { font-size: 22px; }
+.login { max-width: 440px; margin: 10vh auto; padding: 16px; }
+.login-error { margin-bottom: 16px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-end; }
+.filters .ant-form-item { margin: 0; flex: 1 1 155px; max-width: 320px; min-width: 0; }
+.table-wrap { min-width: 0; overflow-x: auto; }
+.table-wrap .ant-table-container table { width: max-content; min-width: 100%; }
+.table-wrap td { max-width: min(340px, 72vw); overflow-wrap: anywhere; white-space: normal; }
+.table-wrap td .ant-btn-link { white-space: normal; height: auto; text-align: left; overflow-wrap: anywhere; max-width: 100%; padding-inline: 0; }
+.ant-pagination { flex-wrap: wrap; }
+.ant-descriptions-item-content { overflow-wrap: anywhere; }
+.stack { width: 100%; }
+.loading { min-height: 64px; }
+.back { justify-self: start; }
+.demo-label { color: #604800; background: #fff4cc; padding: 4px 8px; border-radius: 5px; }

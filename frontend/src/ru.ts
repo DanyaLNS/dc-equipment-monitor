@@ -1,0 +1,48 @@
+declare const __DEMO__: boolean;
+
+export const ru = {
+  demo: 'Демо-режим', demoAccounts: __DEMO__ ? 'Логины: admin и observer. Пароль для обоих: demo1234.' : '',
+  title: 'Мониторинг оборудования ЦОД', login: 'Логин', password: 'Пароль', signIn: 'Войти', signOut: 'Выйти',
+  loading: 'Загрузка…', checkSession: 'Проверка сеанса…', retry: 'Повторить', wait: 'Повторите через',
+  summary: 'Сводка', racks: 'Стойки', equipment: 'Оборудование', settings: 'Настройки', table: 'Таблица данных', ports: 'TCP-порты',
+  admin: 'Администратор', observer: 'Наблюдатель', empty: 'Нет записей', noPorts: 'Нет контролируемых портов',
+  lastSuccess: 'Последний успешный ответ', noSuccess: 'Успешных ответов ещё не было',
+  outdated: 'Нет актуальных данных от сервера', missing: '—', seconds: 'с', ms: 'мс',
+  search: 'Поиск', filters: 'Применить', reset: 'Сбросить', any: 'Все', from: 'Начало периода', to: 'Конец периода',
+  period: 'Начало должно быть раньше конца периода', localTime: 'Местное время', outcome: 'Результат',
+  name: 'Название', location: 'Расположение', description: 'Описание', rack: 'Стойка', inventory: 'Инвентарный номер',
+  type: 'Тип', address: 'Адрес', monitoring: 'Мониторинг', portState: 'Состояние порта', count: 'Количество',
+  total: 'Всего', port: 'TCP-порт', label: 'Метка', lastCheck: 'Последняя проверка', duration: 'Длительность',
+  diagnostic: 'Диагностика', lastOutcome: 'Последний исход', history: 'История', checked: 'Время проверки',
+  addRack: 'Добавить стойку', addEquipment: 'Добавить устройство', addPort: 'Добавить порт',
+  edit: 'Изменить', remove: 'Удалить', actions: 'Действия', save: 'Сохранить', cancel: 'Отмена',
+  back: 'К списку оборудования', backPorts: 'К портам', on: 'Включён', off: 'Выключен', effectiveOff: 'Выключен на устройстве',
+  confirm: 'Подтвердите удаление', deleteEquipment: 'Будут удалены устройство, его порты и история проверок.',
+  deleteTarget: 'Будут удалены порт и его история проверок.', deleteRack: 'Стойка будет удалена.',
+  reread: 'Перечитать данные', current: 'Текущая версия на сервере', conflictHelp: 'Ваши значения сохранены в форме. Сравните их с текущей версией перед повторным сохранением.',
+  missingEtag: 'Сервер не вернул ETag. Изменение невозможно.', required: 'Заполните поле',
+  invalidAddress: 'Введите IPv4, IPv6 или ASCII-имя без схемы и порта',
+  max: (n: number) => `Не более ${n} символов`, range: (a: number, b: number) => `Введите целое число от ${a} до ${b}`,
+  passwordSize: 'Пароль должен занимать от 1 до 1024 байт', timeoutRange: 'Тайм-аут должен быть меньше интервала проверки',
+  staleRange: 'Порог должен быть не меньше интервала плюс тайм-аут с округлением вверх до секунд',
+  interval: 'Интервал проверки, с', timeout: 'Тайм-аут, мс', concurrency: 'Одновременные проверки',
+  stale: 'Порог устаревания, с', retention: 'Хранение истории, суток', cutoff: 'Начало хранимой истории',
+  unknown: 'Не удалось выполнить запрос', uiError: 'Ошибка интерфейса. Обновите страницу.',
+  state: { AVAILABLE: 'Доступно', UNAVAILABLE: 'Недоступно', NOT_CHECKED: 'Не проверялось', DISABLED: 'Мониторинг выключен', STALE: 'Данные устарели' },
+  types: { SERVER: 'Сервер', NETWORK: 'Сетевое', STORAGE: 'Хранилище', OTHER: 'Другое' },
+  errors: {
+    INVALID_CREDENTIALS: 'Неверный логин или пароль', UNAUTHENTICATED: 'Сеанс завершён. Войдите снова.',
+    FORBIDDEN: 'Недостаточно прав', CSRF_FAILED: 'Сервер отклонил проверку CSRF. Обновите страницу.',
+    NOT_FOUND: 'Запись не найдена', RACK_NOT_EMPTY: 'Сначала перенесите или удалите оборудование из стойки.',
+    DUPLICATE_RACK_NAME: 'Стойка с таким названием уже существует.',
+    DUPLICATE_INVENTORY_NUMBER: 'Этот инвентарный номер уже используется.',
+    DUPLICATE_TCP_PORT: 'Этот порт уже добавлен к устройству.',
+    VERSION_CONFLICT: 'Запись изменилась. Перечитайте данные перед повторной отправкой.',
+    VALIDATION_ERROR: 'Проверьте введённые значения', RATE_LIMITED: 'Слишком много запросов',
+    SERVICE_UNAVAILABLE: 'Система недоступна', API_UNAVAILABLE: 'Нет связи с API или истекло время ожидания',
+  } as Record<string, string>,
+};
+
+export const time = (value?: string | number | null) => value == null ? ru.missing :
+  new Intl.DateTimeFormat('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' }).format(new Date(value));
