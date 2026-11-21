@@ -1,4 +1,7 @@
+declare const __DEMO__: boolean;
+
 export const ru = {
+  demo: 'Демо-режим', demoAccounts: __DEMO__ ? 'Логины: admin и observer. Пароль для обоих: demo1234.' : '',
   title: 'Мониторинг оборудования ЦОД', login: 'Логин', password: 'Пароль', signIn: 'Войти', signOut: 'Выйти',
   loading: 'Загрузка…', checkSession: 'Проверка сеанса…', retry: 'Повторить', wait: 'Повторите через',
   summary: 'Сводка', racks: 'Стойки', equipment: 'Оборудование', settings: 'Настройки', table: 'Таблица данных', ports: 'TCP-порты',

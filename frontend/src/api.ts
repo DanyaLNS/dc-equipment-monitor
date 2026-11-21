@@ -33,7 +33,7 @@ export function query(path: string, values: Record<string, string | number | und
   return params.size ? `${path}?${params}` : path;
 }
 
-export function createApi(onUnauthorized: () => void, getRoute: () => Route) {
+export function createApi(onUnauthorized: () => void, getRoute: () => Route, transport: typeof fetch = fetch) {
   let csrf: string | undefined;
   let nextEvent = 0;
   async function request<T = void>(path: string, options: {
@@ -56,7 +56,7 @@ export function createApi(onUnauthorized: () => void, getRoute: () => Route) {
       if (body) headers.set('Content-Type', 'application/json');
       if (method && session && path !== '/auth/login') headers.set('X-CSRF-Token', session);
       if (etag) headers.set('If-Match', etag);
-      const response = await fetch('/api/v1' + path, {
+      const response = await transport('/api/v1' + path, {
         method, headers, credentials: 'same-origin', signal: controller.signal,
         body: body ? JSON.stringify(body) : undefined,
       });

@@ -10,6 +10,12 @@ import { errorText } from './ui';
 import 'antd/dist/reset.css';
 import './style.css';
 
+declare const __DEMO__: boolean;
+declare const __STATIC_DEMO__: boolean;
+
+const readPath = () => __STATIC_DEMO__ ? location.hash.slice(1) || '/' : location.pathname;
+const href = (path: string) => __STATIC_DEMO__ ? '#' + path : path;
+
 const menu = [['/', ru.summary], ['/racks', ru.racks], ['/equipment', ru.equipment], ['/settings', ru.settings]] as const;
 function routeTemplate(path: string): Route {
   if (path.startsWith('/equipment/')) return '/equipment/:id';
@@ -41,6 +47,7 @@ function Login({ api, onLogin }: { api: Api; onLogin: (auth: Auth) => void }) {
     return () => clearInterval(timer);
   }, [error]);
   return <main className="login"><Card title={ru.title}>
+    {__DEMO__ && <Alert className="login-error" type="info" message={ru.demo} description={ru.demoAccounts} />}
     <Form form={form} layout="vertical" disabled={busy} onFinish={async values => {
       if (pending.current || wait) return;
       if (new TextEncoder().encode(values.password).length > 1024) {
@@ -79,7 +86,7 @@ function Login({ api, onLogin }: { api: Api; onLogin: (auth: Auth) => void }) {
 }
 
 function Dashboard({ api, auth, onLogout }: { api: Api; auth: Auth; onLogout: () => void }) {
-  const [path, setPath] = useState(() => location.pathname);
+  const [path, setPath] = useState(readPath);
   const [revision, refresh] = useState(0);
   const [edit, setEdit] = useState<Edit>();
   const [exitError, setExitError] = useState<ApiError>();
@@ -91,9 +98,13 @@ function Dashboard({ api, auth, onLogout }: { api: Api; auth: Auth; onLogout: ()
   const detail = /^\/equipment\/([1-9]\d*)(?:\/ports\/([1-9]\d*)\/history)?\/?$/.exec(path);
   const racks = useRacks(api, active === '/equipment' || (edit?.kind === 'equipment' && edit.mode !== 'delete'));
   useEffect(() => {
-    const pop = () => { setEdit(undefined); setPath(location.pathname); };
+    const pop = () => { setEdit(undefined); setPath(readPath()); };
     window.addEventListener('popstate', pop);
-    return () => window.removeEventListener('popstate', pop);
+    if (__STATIC_DEMO__) window.addEventListener('hashchange', pop);
+    return () => {
+      window.removeEventListener('popstate', pop);
+      if (__STATIC_DEMO__) window.removeEventListener('hashchange', pop);
+    };
   }, []);
   useEffect(() => () => leave.current?.abort(), []);
   useEffect(() => {
@@ -102,7 +113,7 @@ function Dashboard({ api, auth, onLogout }: { api: Api; auth: Auth; onLogout: ()
     return () => clearTimeout(timer);
   }, [exitWait]);
   function navigate(next: string) {
-    if (location.pathname !== next) history.pushState(null, '', next);
+    if (readPath() !== next) history.pushState(null, '', href(next));
     setEdit(undefined);
     setPath(next);
   }
@@ -131,8 +142,9 @@ function Dashboard({ api, auth, onLogout }: { api: Api; auth: Auth; onLogout: ()
   return <ErrorBoundary api={api}>
     <header className="toolbar">
       <strong>{ru.title}</strong>
+      {__DEMO__ && <span className="demo-label">{ru.demo}</span>}
       <nav aria-label={ru.title}>{menu.map(([destination, label]) =>
-        <a key={destination} href={destination} aria-current={active === destination ||
+        <a key={destination} href={href(destination)} aria-current={active === destination ||
           (active === '/equipment/:id' && destination === '/equipment') ? 'page' : undefined}
           onClick={event => {
             if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
@@ -160,12 +172,12 @@ function Dashboard({ api, auth, onLogout }: { api: Api; auth: Auth; onLogout: ()
   </ErrorBoundary>;
 }
 
-function App() {
+function App({ transport }: { transport?: typeof fetch }) {
   const [auth, setAuth] = useState<Auth | null>();
   const [error, setError] = useState<ApiError>();
   const [attempt, retry] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
-  const [api] = useState(() => createApi(() => setAuth(null), () => routeTemplate(location.pathname)));
+  const [api] = useState(() => createApi(() => setAuth(null), () => routeTemplate(readPath()), transport));
   function login(session: Auth) {
     api.setCsrf(session.csrf_token);
     setAuth(session);
@@ -198,5 +210,9 @@ function App() {
   return auth ? <Dashboard api={api} auth={auth} onLogout={() => { api.setCsrf(); setAuth(null); }} /> : <Login api={api} onLogin={login} />;
 }
 
-createRoot(document.getElementById('root')!).render(<ConfigProvider locale={ruRU}
-  theme={{ token: { colorPrimary: '#1d5489', borderRadius: 6 } }}><App /></ConfigProvider>);
+function mount(transport?: typeof fetch) {
+  createRoot(document.getElementById('root')!).render(<ConfigProvider locale={ruRU}
+    theme={{ token: { colorPrimary: '#1d5489', borderRadius: 6 } }}><App transport={transport} /></ConfigProvider>);
+}
+if (__STATIC_DEMO__) void import('../demo/browser').then(({ createDemoFetch }) => mount(createDemoFetch()));
+else mount();
