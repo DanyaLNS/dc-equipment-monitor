@@ -1,6 +1,7 @@
 import { Alert, Button, Card, ConfigProvider, Form, Input, Spin } from 'antd';
+import { AppstoreOutlined, DashboardOutlined, DatabaseOutlined, LogoutOutlined, SettingOutlined } from '@ant-design/icons';
 import ruRU from 'antd/locale/ru_RU';
-import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ApiError, createApi, type Api, type Auth, type Route } from './api';
 import { Editor, useRacks, type Edit } from './editor';
@@ -16,7 +17,12 @@ declare const __STATIC_DEMO__: boolean;
 const readPath = () => __STATIC_DEMO__ ? location.hash.slice(1) || '/' : location.pathname;
 const href = (path: string) => __STATIC_DEMO__ ? '#' + path : path;
 
-const menu = [['/', ru.summary], ['/racks', ru.racks], ['/equipment', ru.equipment], ['/settings', ru.settings]] as const;
+const menu = [
+  ['/', ru.summary, DashboardOutlined],
+  ['/racks', ru.racks, DatabaseOutlined],
+  ['/equipment', ru.equipment, AppstoreOutlined],
+  ['/settings', ru.settings, SettingOutlined],
+] as const;
 function routeTemplate(path: string): Route {
   if (path.startsWith('/equipment/')) return '/equipment/:id';
   return menu.find(([route]) => route === path)?.[0] ?? '/';
@@ -46,7 +52,11 @@ function Login({ api, onLogin }: { api: Api; onLogin: (auth: Auth) => void }) {
     }, 250);
     return () => clearInterval(timer);
   }, [error]);
-  return <main className="login"><Card title={ru.title}>
+  return <main className="login"><Card className="login-panel">
+    <div className="login-heading">
+      <span className="brand-icon"><DatabaseOutlined aria-hidden="true" /></span>
+      <div><h1>{ru.signIn}</h1><p>{ru.title}</p></div>
+    </div>
     {__DEMO__ && <Alert className="login-error" type="info" message={ru.demo} description={ru.demoAccounts} />}
     <Form form={form} layout="vertical" disabled={busy} onFinish={async values => {
       if (pending.current || wait) return;
@@ -89,6 +99,20 @@ function Dashboard({ api, auth, onLogout }: { api: Api; auth: Auth; onLogout: ()
   const [path, setPath] = useState(readPath);
   const [revision, refresh] = useState(0);
   const [edit, setEdit] = useState<Edit>();
+  const main = useRef<HTMLElement>(null);
+  const editorTrigger = useRef<HTMLElement | null>(null);
+  const previousPath = useRef(path);
+  useLayoutEffect(() => {
+    if (previousPath.current !== path) {
+      previousPath.current = path;
+      editorTrigger.current = null;
+      main.current?.focus();
+    } else if (!edit && editorTrigger.current) {
+      const trigger = editorTrigger.current;
+      editorTrigger.current = null;
+      (trigger.isConnected ? trigger : main.current)?.focus();
+    }
+  }, [edit, path]);
   const [exitError, setExitError] = useState<ApiError>();
   const [exiting, setExiting] = useState(false);
   const [exitWait, setExitWait] = useState(0);
@@ -138,34 +162,48 @@ function Dashboard({ api, auth, onLogout }: { api: Api; auth: Auth; onLogout: ()
       if (!controller.signal.aborted) setExiting(false);
     }
   }
-  const common = { api, revision, admin: auth.user.role === 'ADMIN', edit: setEdit };
+  const common = { api, revision, admin: auth.user.role === 'ADMIN', edit: (next: Edit) => {
+    editorTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setEdit(next);
+  } };
   return <ErrorBoundary api={api}>
-    <header className="toolbar">
-      <strong>{ru.title}</strong>
-      {__DEMO__ && <span className="demo-label">{ru.demo}</span>}
-      <nav aria-label={ru.title}>{menu.map(([destination, label]) =>
-        <a key={destination} href={href(destination)} aria-current={active === destination ||
-          (active === '/equipment/:id' && destination === '/equipment') ? 'page' : undefined}
-          onClick={event => {
-            if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-            event.preventDefault(); navigate(destination);
-          }}>{label}</a>)}</nav>
-      <div className="account"><span>{auth.user.login} · {common.admin ? ru.admin : ru.observer}</span>
-        <Button loading={exiting} disabled={exitWait > Date.now()} onClick={() => void logout()}>{ru.signOut}</Button></div>
-    </header>
-    <main className="content">
-      {exitError && <Alert type="error" showIcon message={errorText(exitError)}
-        description={exitWait > Date.now() ? `${ru.wait} ${time(exitWait)}` : undefined} />}
-      {detail && (detail[2] ?
-        <HistoryScreen key={path} {...common} id={detail[1]} target={detail[2]} navigate={navigate} /> :
-        <DetailScreen key={path} {...common} id={detail[1]} navigate={navigate} />)}
-      {!detail && (active === '/racks' ? <RacksScreen {...common} /> :
-        active === '/equipment' ? <EquipmentScreen {...common} racks={racks} navigate={navigate} /> :
-        active === '/settings' ? <SettingsScreen {...common} /> : <SummaryScreen {...common} />)}
-    </main>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-icon"><DatabaseOutlined aria-hidden="true" /></span>
+          <strong>{ru.title}</strong>
+          {__DEMO__ && <span className="demo-label">{ru.demo}</span>}
+        </div>
+        <nav aria-label={ru.title}>{menu.map(([destination, label, Icon]) =>
+          <a key={destination} href={href(destination)} aria-current={active === destination ||
+            (active === '/equipment/:id' && destination === '/equipment') ? 'page' : undefined}
+            onClick={event => {
+              if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+              event.preventDefault(); navigate(destination);
+            }}><Icon aria-hidden="true" /><span>{label}</span></a>)}</nav>
+        <div className="account">
+          <div><strong>{auth.user.login}</strong><span>{common.admin ? ru.admin : ru.observer}</span></div>
+          <Button icon={<LogoutOutlined aria-hidden="true" />} aria-label={ru.signOut} title={ru.signOut}
+            loading={exiting} disabled={exitWait > Date.now()} onClick={() => void logout()} />
+        </div>
+      </aside>
+      <main className="content" ref={main} tabIndex={-1}>
+        {exitError && <Alert type="error" showIcon message={errorText(exitError)}
+          description={exitWait > Date.now() ? `${ru.wait} ${time(exitWait)}` : undefined} />}
+        {detail && (detail[2] ?
+          <HistoryScreen key={path} {...common} id={detail[1]} target={detail[2]} navigate={navigate} /> :
+          <DetailScreen key={path} {...common} id={detail[1]} navigate={navigate} />)}
+        {!detail && (active === '/racks' ? <RacksScreen {...common} /> :
+          active === '/equipment' ? <EquipmentScreen {...common} racks={racks} navigate={navigate} /> :
+          active === '/settings' ? <SettingsScreen {...common} /> : <SummaryScreen {...common} />)}
+      </main>
+    </div>
     {edit && <Editor key={edit.mode + edit.path} edit={edit} api={api} racks={racks} onClose={() => setEdit(undefined)}
       onSaved={() => {
-        if (edit.mode === 'delete' && edit.kind === 'equipment' && detail) navigate('/equipment');
+        if (edit.mode === 'delete') {
+          editorTrigger.current = main.current;
+          if (edit.kind === 'equipment' && detail) navigate('/equipment');
+        }
         setEdit(undefined);
         refresh(value => value + 1);
       }} />}
@@ -212,7 +250,22 @@ function App({ transport }: { transport?: typeof fetch }) {
 
 function mount(transport?: typeof fetch) {
   createRoot(document.getElementById('root')!).render(<ConfigProvider locale={ruRU}
-    theme={{ token: { colorPrimary: '#1d5489', borderRadius: 6 } }}><App transport={transport} /></ConfigProvider>);
+    theme={{
+      cssVar: { key: 'dc-monitor' },
+      token: {
+        fontFamily: 'var(--system-font)', fontSize: 14, controlHeight: 34,
+        colorPrimary: '#1760c2', colorLink: '#1760c2', colorText: '#192333', colorTextSecondary: '#536176',
+        colorTextPlaceholder: '#647187', colorBorder: '#a8b2c1', colorBorderSecondary: '#dce2eb',
+        colorError: '#b32435', borderRadius: 8, motionDurationFast: '0.1s', motionDurationMid: '0.16s',
+        motionDurationSlow: '0.2s',
+      },
+      components: {
+        Button: { primaryShadow: 'none', defaultShadow: 'none', dangerShadow: 'none' },
+        Table: { headerBg: '#f3f5f8', rowHoverBg: '#f5f8fd' },
+        Card: { bodyPadding: 20 },
+        Statistic: { contentFontSize: 26 },
+      },
+    }}><App transport={transport} /></ConfigProvider>);
 }
 if (__STATIC_DEMO__) void import('../demo/browser').then(({ createDemoFetch }) => mount(createDemoFetch()));
 else mount();

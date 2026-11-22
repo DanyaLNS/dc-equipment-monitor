@@ -29,6 +29,11 @@ export const fields: Record<Kind, Field[]> = {
     { key: 'retention_days', label: ru.retention, range: [1, 30] }],
 };
 
+export const settingsGroups = [
+  { title: ru.probes, fields: fields.settings.slice(0, 3) },
+  { title: ru.observations, fields: fields.settings.slice(3) },
+];
+
 export function validateFields(kind: Kind, values: Values) {
   const errors: Record<string, string> = {};
   for (const field of fields[kind]) {
@@ -190,7 +195,17 @@ export function Editor({ edit, api, racks, onClose, onSaved }: {
     }
   }
 
-  return <Modal open title={title} onCancel={onClose} closable={!busy} maskClosable={false} keyboard={!busy}
+  const renderField = (field: Field) => <Form.Item key={field.key} name={field.key} label={field.label}
+    required={field.required || !!field.range} valuePropName={field.kind === 'switch' ? 'checked' : 'value'}>
+    {field.kind === 'switch' ? <Switch aria-label={field.label} checkedChildren={ru.on} unCheckedChildren={ru.off} /> :
+      field.kind === 'rack' ? <Select aria-label={field.label} showSearch optionFilterProp="label" loading={racks.loading}
+        options={racks.rows.map(rack => ({ value: rack.id, label: rack.name }))} /> :
+      field.choices ? <Select aria-label={field.label} options={Object.entries(field.choices).map(([value, label]) => ({ value, label }))} /> :
+      field.range ? <InputNumber className="stack" /> :
+      field.kind === 'textarea' ? <Input.TextArea rows={3} /> : <Input />}
+  </Form.Item>;
+
+  return <Modal open focusTriggerAfterClose={false} title={title} onCancel={onClose} closable={!busy} maskClosable={false} keyboard={!busy}
     footer={<Space wrap><Button disabled={busy} onClick={onClose}>{ru.cancel}</Button>
       <Button type="primary" danger={mode === 'delete'} loading={busy}
         disabled={loading || (mode !== 'create' && !version) || retry > Date.now()}
@@ -201,21 +216,16 @@ export function Editor({ edit, api, racks, onClose, onSaved }: {
       {error && <Alert type="error" showIcon message={errorText(error)} description={error.status === 429 && error.retryAt > Date.now() ? `${ru.wait} ${time(error.retryAt)}` : undefined}
         action={mode !== 'create' && !version && !loading && retry <= Date.now() ?
           <Button onClick={reread}>{ru.reread}</Button> : undefined} />}
-      {loading && <Spin><div className="loading" /></Spin>}
+      {loading && <div role="status"><Spin tip={ru.loading}><div className="loading" /></Spin></div>}
       {mode === 'delete' ? <div>{deleteText[kind]} {version && display(version.data.name ?? version.data.tcp_port)}</div> :
-        <Form id="resource-editor" form={form} layout="vertical" initialValues={{ monitoring_enabled: true, type: 'SERVER' }}
+        <Form className="editor-form" id="resource-editor" form={form} layout="vertical" initialValues={{ monitoring_enabled: true, type: 'SERVER' }}
           disabled={busy || loading} onFinish={() => void submit()} onValuesChange={changed => {
             form.setFields(Object.keys(changed).map(name => ({ name, errors: [] })));
           }}>
-          {definition.map(field => <Form.Item key={field.key} name={field.key} label={field.label}
-            required={field.required || !!field.range} valuePropName={field.kind === 'switch' ? 'checked' : 'value'}>
-            {field.kind === 'switch' ? <Switch aria-label={field.label} checkedChildren={ru.on} unCheckedChildren={ru.off} /> :
-              field.kind === 'rack' ? <Select aria-label={field.label} showSearch optionFilterProp="label" loading={racks.loading}
-                options={racks.rows.map(rack => ({ value: rack.id, label: rack.name }))} /> :
-              field.choices ? <Select aria-label={field.label} options={Object.entries(field.choices).map(([value, label]) => ({ value, label }))} /> :
-              field.range ? <InputNumber className="stack" /> :
-              field.kind === 'textarea' ? <Input.TextArea rows={3} /> : <Input />}
-          </Form.Item>)}
+          {kind === 'settings' ? settingsGroups.map(group => <fieldset key={group.title} className="settings-fields">
+            <legend>{group.title}</legend>
+            {group.fields.map(renderField)}
+          </fieldset>) : definition.map(renderField)}
         </Form>}
       {kind === 'equipment' && mode !== 'delete' && racks.error && <Alert type="error" message={errorText(racks.error)} />}
       {comparison && version && mode === 'edit' && <Alert type="info" message={ru.current} description={<>
