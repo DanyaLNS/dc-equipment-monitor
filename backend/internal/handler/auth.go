@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,9 +13,10 @@ import (
 )
 
 type AuthHandler struct {
-	Pool    *pgxpool.Pool
-	Users   *repository.UserRepo
+	Pool     *pgxpool.Pool
+	Users    *repository.UserRepo
 	Sessions *repository.SessionRepo
+	Limiter  *repository.LimiterRepo
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -24,6 +26,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteErr(w, r, 400, "INVALID_JSON", "invalid json")
+		return
+	}
+	ok, wait, _ := h.Limiter.CheckAndRecord(r.Context(), "PAIR", body.Login+"|"+r.RemoteAddr)
+	if !ok {
+		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())))
+		WriteErr(w, r, 429, "RATE_LIMITED", "rate limited")
 		return
 	}
 	id, hash, role, active, av, err := h.Users.GetByLogin(r.Context(), body.Login)

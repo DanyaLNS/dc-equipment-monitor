@@ -32,6 +32,19 @@ func main() {
 		log.Printf("migration warning: %v", err)
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "create-user" {
+		if len(os.Args) < 5 {
+			log.Fatal("usage: create-user <login> <password> <role>")
+		}
+		ur := &repository.UserRepo{Pool: pool}
+		id, err := ur.Create(ctx, os.Args[2], os.Args[3], os.Args[4])
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("created user id=%d", id)
+		return
+	}
+
 	r := newRouter(pool)
 	log.Println("listening on", cfg.HTTPAddr)
 	if err := http.ListenAndServe(cfg.HTTPAddr, r); err != nil {
@@ -68,7 +81,7 @@ func newRouter(pool *pgxpool.Pool) http.Handler {
 	mux := http.NewServeMux()
 	ur := &repository.UserRepo{Pool: pool}
 	sr := &repository.SessionRepo{Pool: pool}
-	ah := &handler.AuthHandler{Pool: pool, Users: ur, Sessions: sr}
+	ah := &handler.AuthHandler{Pool: pool, Users: ur, Sessions: sr, Limiter: &repository.LimiterRepo{Pool: pool}}
 	mw := &middleware.AuthMW{Pool: pool, Users: ur, Sessions: sr}
 
 	mux.HandleFunc("/health/live", func(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +118,12 @@ func newRouter(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("GET /api/v1/targets/{id}", th.Get)
 	mux.Handle("PATCH /api/v1/targets/{id}", mw.Require(http.HandlerFunc(th.Update)))
 	mux.Handle("DELETE /api/v1/targets/{id}", mw.Require(http.HandlerFunc(th.Delete)))
-	mux.HandleFunc("GET /api/v1/targets/{id}/history", th.History)
-	return mux
+	sh := &handler.SettingsHandler{Pool: pool, Repo: &repository.SettingsRepo{Pool: pool}}
+	sumh := &handler.SummaryHandler{Pool: pool}
+	ceh := &handler.ClientEventsHandler{}
+	mux.HandleFunc("GET /api/v1/summary", sumh.Get)
+	mux.HandleFunc("GET /api/v1/settings", sh.Get)
+	mux.Handle("PATCH /api/v1/settings", mw.Require(http.HandlerFunc(sh.Update)))
+	mux.Handle("POST /api/v1/client-events", mw.Require(http.HandlerFunc(ceh.Post)))
+	return middleware.OriginCheck(mux)
 }
