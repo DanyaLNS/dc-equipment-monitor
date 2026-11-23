@@ -86,6 +86,25 @@ func newRouter(pool *pgxpool.Pool) http.Handler {
 	})
 	mux.HandleFunc("POST /api/v1/auth/login", ah.Login)
 	mux.Handle("GET /api/v1/auth/me", mw.Require(http.HandlerFunc(ah.Me)))
-	mux.Handle("POST /api/v1/auth/logout", mw.Require(http.HandlerFunc(ah.Logout)))
+	rh := &handler.RackHandler{Pool: pool, Repo: &repository.RackRepo{Pool: pool}}
+	mux.HandleFunc("GET /api/v1/racks", rh.List)
+	mux.Handle("POST /api/v1/racks", mw.Require(http.HandlerFunc(rh.Create)))
+	mux.HandleFunc("GET /api/v1/racks/{id}", rh.Get)
+	mux.Handle("PATCH /api/v1/racks/{id}", mw.Require(http.HandlerFunc(rh.Update)))
+	mux.Handle("DELETE /api/v1/racks/{id}", mw.Require(http.HandlerFunc(rh.Delete)))
+
+	eh := &handler.EquipmentHandler{Pool: pool, Repo: &repository.EquipmentRepo{Pool: pool}, Targets: &repository.TargetRepo{Pool: pool}}
+	th := &handler.TargetHandler{Pool: pool, Repo: &repository.TargetRepo{Pool: pool}}
+	mux.HandleFunc("GET /api/v1/equipment", eh.List)
+	mux.Handle("POST /api/v1/equipment", mw.Require(http.HandlerFunc(eh.Create)))
+	mux.HandleFunc("GET /api/v1/equipment/{id}", eh.Get)
+	mux.Handle("PATCH /api/v1/equipment/{id}", mw.Require(http.HandlerFunc(eh.Update)))
+	mux.Handle("DELETE /api/v1/equipment/{id}", mw.Require(http.HandlerFunc(eh.Delete)))
+	mux.HandleFunc("GET /api/v1/equipment/{id}/view", eh.View)
+	mux.Handle("POST /api/v1/equipment/{id}/targets", mw.Require(http.HandlerFunc(th.Create)))
+	mux.HandleFunc("GET /api/v1/targets/{id}", th.Get)
+	mux.Handle("PATCH /api/v1/targets/{id}", mw.Require(http.HandlerFunc(th.Update)))
+	mux.Handle("DELETE /api/v1/targets/{id}", mw.Require(http.HandlerFunc(th.Delete)))
+	mux.HandleFunc("GET /api/v1/targets/{id}/history", th.History)
 	return mux
 }
