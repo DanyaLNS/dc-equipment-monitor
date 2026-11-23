@@ -17,7 +17,7 @@ type Config struct {
 
 func Load() Config {
 	c := Config{
-		DatabaseURL:  env("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/dceq?sslmode=disable"),
+		DatabaseURL:  env("DATABASE_URL", "postgres://postgres:9b8df3166c0d62cdad6d2672841a09457e5531cf07fc2ad9@localhost:5432/bd_dc_monitor?sslmode=disable"),
 		HTTPAddr:     env("HTTP_ADDR", ":8080"),
 		CookieSecure: env("COOKIE_SECURE", "false") == "true",
 	}

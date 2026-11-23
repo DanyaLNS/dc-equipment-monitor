@@ -60,6 +60,12 @@ func main() {
 }
 
 func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
+	// One-time migration from legacy schema: drop old tables only if legacy check_results exists
+	var legacy bool
+	pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='check_results')`).Scan(&legacy)
+	if legacy {
+		pool.Exec(ctx, `DROP TABLE IF EXISTS audit, limiter, session, runtime, settings, current_observation, probe_result, tcp_target, equipment, rack, users, check_results CASCADE`)
+	}
 	entries, err := os.ReadDir("migrations")
 	if err != nil {
 		return err
