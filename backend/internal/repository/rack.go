@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,13 +20,13 @@ func (r *RackRepo) Get(ctx context.Context, id int64) (map[string]any, int64, er
 	var name string
 	var loc, desc *string
 	var ver int64
-	var created, updated string
+	var created, updated time.Time
 	err := r.Pool.QueryRow(ctx, `SELECT name, location, description, version, created_at, updated_at FROM rack WHERE id=$1`, id).
 		Scan(&name, &loc, &desc, &ver, &created, &updated)
 	if err != nil {
 		return nil, 0, err
 	}
-	m := map[string]any{"id": id, "name": name, "location": loc, "description": desc, "version": ver, "created_at": created, "updated_at": updated}
+	m := map[string]any{"id": id, "name": name, "location": loc, "description": desc, "version": ver, "created_at": created.UTC().Format(time.RFC3339), "updated_at": updated.UTC().Format(time.RFC3339)}
 	return m, ver, nil
 }
 
@@ -47,12 +48,12 @@ func (r *RackRepo) List(ctx context.Context, q string, page, size int) ([]map[st
 		var name string
 		var loc, desc *string
 		var ver int64
-		var created, updated string
+		var created, updated time.Time
 		var ec int
 		if err := rows.Scan(&id, &name, &loc, &desc, &ver, &created, &updated, &ec); err != nil {
 			return nil, 0, err
 		}
-		items = append(items, map[string]any{"id": id, "name": name, "location": loc, "description": desc, "version": ver, "created_at": created, "updated_at": updated, "equipment_count": ec})
+		items = append(items, map[string]any{"id": id, "name": name, "location": loc, "description": desc, "version": ver, "created_at": created.UTC().Format(time.RFC3339), "updated_at": updated.UTC().Format(time.RFC3339), "equipment_count": ec})
 	}
 	var total int
 	r.Pool.QueryRow(ctx, `SELECT count(*) FROM rack WHERE ($1='' OR lower(name) LIKE '%'||lower($1)||'%' OR lower(COALESCE(location,'')) LIKE '%'||lower($1)||'%')`, q).Scan(&total)

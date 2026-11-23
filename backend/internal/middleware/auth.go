@@ -33,7 +33,6 @@ func (m *AuthMW) Require(next http.Handler) http.Handler {
 			handler.WriteErr(w, r, 401, "UNAUTHENTICATED", "unauthenticated")
 			return
 		}
-		// absolute session expiry: 8h30m from last activity? spec: 8h30 from last allowed request; polling extends idle not absolute
 		if time.Since(lastAct) > 8*time.Hour+30*time.Minute {
 			handler.WriteErr(w, r, 401, "UNAUTHENTICATED", "unauthenticated")
 			return

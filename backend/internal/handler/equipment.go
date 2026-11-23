@@ -63,7 +63,7 @@ func (h *EquipmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := h.Repo.Create(r.Context(), body.RackID, body.Name, body.InventoryNumber, body.Type, body.Address, mon)
 	if err != nil {
-		WriteErr(w, r, 500, "INTERNAL_ERROR", "internal")
+		WriteErr(w, r, 500, "INTERNAL_ERROR", err.Error())
 		return
 	}
 	w.Header().Set("ETag", "\"equipment-"+strconv.FormatInt(id, 10)+"-v1\"")

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -22,14 +23,19 @@ func (r *TargetRepo) Get(ctx context.Context, id int64) (map[string]any, int64, 
 	var label *string
 	var mon bool
 	var rev, ver int64
-	var created, updated string
-	var nextDue *string
+	var created, updated time.Time
+	var nextDue *time.Time
 	err := r.Pool.QueryRow(ctx, `SELECT equipment_id, tcp_port, label, monitoring_enabled, monitor_revision, version, next_due_at, created_at, updated_at FROM tcp_target WHERE id=$1`, id).
 		Scan(&equipID, &port, &label, &mon, &rev, &ver, &nextDue, &created, &updated)
 	if err != nil {
 		return nil, 0, err
 	}
-	m := map[string]any{"id": id, "equipment_id": equipID, "tcp_port": port, "label": label, "monitoring_enabled": mon, "monitor_revision": rev, "version": ver, "next_due_at": nextDue, "created_at": created, "updated_at": updated}
+	var nextDueStr *string
+	if nextDue != nil {
+		s := nextDue.UTC().Format(time.RFC3339)
+		nextDueStr = &s
+	}
+	m := map[string]any{"id": id, "equipment_id": equipID, "tcp_port": port, "label": label, "monitoring_enabled": mon, "monitor_revision": rev, "version": ver, "next_due_at": nextDueStr, "created_at": created.UTC().Format(time.RFC3339), "updated_at": updated.UTC().Format(time.RFC3339)}
 	return m, ver, nil
 }
 
@@ -46,12 +52,17 @@ func (r *TargetRepo) ListByEquipment(ctx context.Context, equipID int64) ([]map[
 		var label *string
 		var mon bool
 		var rev, ver int64
-		var nextDue *string
-		var created, updated string
+		var nextDue *time.Time
+		var created, updated time.Time
 		if err := rows.Scan(&id, &equip, &port, &label, &mon, &rev, &ver, &nextDue, &created, &updated); err != nil {
 			return nil, err
 		}
-		items = append(items, map[string]any{"id": id, "equipment_id": equip, "tcp_port": port, "label": label, "monitoring_enabled": mon, "monitor_revision": rev, "version": ver, "next_due_at": nextDue, "created_at": created, "updated_at": updated, "effective_monitoring_enabled": mon, "state": "NOT_CHECKED", "last_result": nil, "stale_at": nil})
+		var nextDueStr *string
+		if nextDue != nil {
+			s := nextDue.UTC().Format(time.RFC3339)
+			nextDueStr = &s
+		}
+		items = append(items, map[string]any{"id": id, "equipment_id": equip, "tcp_port": port, "label": label, "monitoring_enabled": mon, "monitor_revision": rev, "version": ver, "next_due_at": nextDueStr, "created_at": created.UTC().Format(time.RFC3339), "updated_at": updated.UTC().Format(time.RFC3339), "effective_monitoring_enabled": mon, "state": "NOT_CHECKED", "last_result": nil, "stale_at": nil})
 	}
 	return items, nil
 }

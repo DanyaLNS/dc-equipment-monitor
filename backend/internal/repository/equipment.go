@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -21,13 +22,13 @@ func (r *EquipmentRepo) Get(ctx context.Context, id int64) (map[string]any, int6
 	var name, inv, typ, addr string
 	var mon bool
 	var ver int64
-	var created, updated string
+	var created, updated time.Time
 	err := r.Pool.QueryRow(ctx, `SELECT rack_id, name, inventory_number, type, address, monitoring_enabled, version, created_at, updated_at FROM equipment WHERE id=$1`, id).
 		Scan(&rackID, &name, &inv, &typ, &addr, &mon, &ver, &created, &updated)
 	if err != nil {
 		return nil, 0, err
 	}
-	m := map[string]any{"id": id, "rack_id": rackID, "name": name, "inventory_number": inv, "type": typ, "address": addr, "monitoring_enabled": mon, "version": ver, "created_at": created, "updated_at": updated}
+	m := map[string]any{"id": id, "rack_id": rackID, "name": name, "inventory_number": inv, "type": typ, "address": addr, "monitoring_enabled": mon, "version": ver, "created_at": created.UTC().Format(time.RFC3339), "updated_at": updated.UTC().Format(time.RFC3339)}
 	return m, ver, nil
 }
 
@@ -53,14 +54,14 @@ func (r *EquipmentRepo) List(ctx context.Context, q string, rackID *int64, typ *
 		var rName, name, inv, typv, addr string
 		var monv bool
 		var ver int64
-		var created, updated string
+		var created, updated time.Time
 		var total, avail int
 		if err := rows.Scan(&id, &rID, &rName, &name, &inv, &typv, &addr, &monv, &ver, &created, &updated, &total, &avail); err != nil {
 			return nil, 0, err
 		}
 		items = append(items, map[string]any{
 			"id": id, "rack_id": rID, "rack_name": rName, "name": name, "inventory_number": inv, "type": typv, "address": addr,
-			"monitoring_enabled": monv, "version": ver, "created_at": created, "updated_at": updated,
+			"monitoring_enabled": monv, "version": ver, "created_at": created.UTC().Format(time.RFC3339), "updated_at": updated.UTC().Format(time.RFC3339),
 			"target_counts": map[string]any{"total": total, "available": avail, "unavailable": 0, "not_checked": 0, "disabled": 0, "stale": 0},
 		})
 	}

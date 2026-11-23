@@ -44,7 +44,7 @@ func (h *RackHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := h.Repo.Create(r.Context(), body.Name, body.Location, body.Description)
 	if err != nil {
-		WriteErr(w, r, 500, "INTERNAL_ERROR", "internal")
+		WriteErr(w, r, 500, "INTERNAL_ERROR", err.Error())
 		return
 	}
 	w.Header().Set("ETag", "\"rack-"+strconv.FormatInt(id, 10)+"-v1\"")

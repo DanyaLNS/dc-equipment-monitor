@@ -51,8 +51,8 @@ func main() {
 
 	ops.StartCleanup(context.Background(), pool)
 
-		pool.Exec(ctx, `INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
-		pool.Exec(ctx, `INSERT INTO runtime (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
+	pool.Exec(ctx, `INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
+	pool.Exec(ctx, `INSERT INTO runtime (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
 
 	r := newRouter(pool)
 	log.Println("listening on", cfg.HTTPAddr)
@@ -118,6 +118,7 @@ func newRouter(pool *pgxpool.Pool) http.Handler {
 	})
 	mux.HandleFunc("POST /api/v1/auth/login", ah.Login)
 	mux.Handle("GET /api/v1/auth/me", mw.Require(http.HandlerFunc(ah.Me)))
+	mux.Handle("POST /api/v1/auth/logout", mw.Require(http.HandlerFunc(ah.Logout)))
 	rh := &handler.RackHandler{Pool: pool, Repo: &repository.RackRepo{Pool: pool}}
 	mux.HandleFunc("GET /api/v1/racks", rh.List)
 	mux.Handle("POST /api/v1/racks", mw.Require(http.HandlerFunc(rh.Create)))
@@ -137,6 +138,7 @@ func newRouter(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("GET /api/v1/targets/{id}", th.Get)
 	mux.Handle("PATCH /api/v1/targets/{id}", mw.Require(http.HandlerFunc(th.Update)))
 	mux.Handle("DELETE /api/v1/targets/{id}", mw.Require(http.HandlerFunc(th.Delete)))
+	mux.HandleFunc("GET /api/v1/targets/{id}/history", th.History)
 	sh := &handler.SettingsHandler{Pool: pool, Repo: &repository.SettingsRepo{Pool: pool}}
 	sumh := &handler.SummaryHandler{Pool: pool}
 	ceh := &handler.ClientEventsHandler{}

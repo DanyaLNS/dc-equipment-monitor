@@ -16,7 +16,7 @@ func OriginCheck(next http.Handler) http.Handler {
 			// allow same-origin without Origin for some clients? spec requires Origin for changes
 		}
 		host := r.Host
-		if origin != "" && !strings.Contains(origin, host) {
+		if origin != "" && origin != "null" && !strings.Contains(origin, host) {
 			// not same origin
 			w.WriteHeader(403)
 			w.Write([]byte(`{"error":{"code":"CSRF_FAILED","message":"origin mismatch","fields":{},"request_id":""},"meta":{"server_time":""}}`))
