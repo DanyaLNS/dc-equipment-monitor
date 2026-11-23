@@ -13,6 +13,8 @@ import (
 	"dc-equipment-monitor/backend/internal/config"
 	"dc-equipment-monitor/backend/internal/handler"
 	"dc-equipment-monitor/backend/internal/middleware"
+	"dc-equipment-monitor/backend/internal/monitor"
+	"dc-equipment-monitor/backend/internal/ops"
 	"dc-equipment-monitor/backend/internal/repository"
 )
 
@@ -44,6 +46,11 @@ func main() {
 		log.Printf("created user id=%d", id)
 		return
 	}
+
+	m := monitor.New(pool)
+	go m.Start(context.Background())
+
+	ops.StartCleanup(context.Background(), pool)
 
 	r := newRouter(pool)
 	log.Println("listening on", cfg.HTTPAddr)
@@ -84,6 +91,10 @@ func newRouter(pool *pgxpool.Pool) http.Handler {
 	ah := &handler.AuthHandler{Pool: pool, Users: ur, Sessions: sr, Limiter: &repository.LimiterRepo{Pool: pool}}
 	mw := &middleware.AuthMW{Pool: pool, Users: ur, Sessions: sr}
 
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("# HELP up 1\nup 1\n"))
+	})
 	mux.HandleFunc("/health/live", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"status":"ok"}`))
