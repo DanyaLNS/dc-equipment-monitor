@@ -51,6 +51,9 @@ func main() {
 
 	ops.StartCleanup(context.Background(), pool)
 
+		pool.Exec(ctx, `INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
+		pool.Exec(ctx, `INSERT INTO runtime (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
+
 	r := newRouter(pool)
 	log.Println("listening on", cfg.HTTPAddr)
 	if err := http.ListenAndServe(cfg.HTTPAddr, r); err != nil {

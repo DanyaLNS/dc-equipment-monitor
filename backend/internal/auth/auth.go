@@ -26,11 +26,11 @@ func HashPassword(password string) (string, error) {
 func VerifyPassword(password, encoded string) bool {
 	// parse
 	parts := splitPHC(encoded)
-	if len(parts) != 6 {
+	if len(parts) != 5 {
 		return false
 	}
-	salt, _ := base64.RawStdEncoding.DecodeString(parts[4])
-	hash, _ := base64.RawStdEncoding.DecodeString(parts[5])
+	salt, _ := base64.RawStdEncoding.DecodeString(parts[3])
+	hash, _ := base64.RawStdEncoding.DecodeString(parts[4])
 	// params fixed
 	computed := argon2.IDKey([]byte(password), salt, 1, 64*1024, 4, 32)
 	if len(computed) != len(hash) {

@@ -6,7 +6,7 @@
 
 ## Variables de entorno
 - DATABASE_URL (default postgres://postgres:postgres@localhost:5432/dceq?sslmode=disable)
-- HTTP_ADDR (default :8080)
+- HTTP_ADDR (default :8081)
 
 ## Migraciones
 Se ejecutan automáticamente al iniciar. Archivos en migrations/.
