@@ -2,17 +2,18 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"dc-equipment-monitor/backend/internal/config"
+	"dc-equipment-monitor/backend/internal/handler"
+	"dc-equipment-monitor/backend/internal/middleware"
+	"dc-equipment-monitor/backend/internal/repository"
 )
 
 // migrations loaded from ./migrations at runtime
@@ -65,6 +66,11 @@ func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 
 func newRouter(pool *pgxpool.Pool) http.Handler {
 	mux := http.NewServeMux()
+	ur := &repository.UserRepo{Pool: pool}
+	sr := &repository.SessionRepo{Pool: pool}
+	ah := &handler.AuthHandler{Pool: pool, Users: ur, Sessions: sr}
+	mw := &middleware.AuthMW{Pool: pool, Users: ur, Sessions: sr}
+
 	mux.HandleFunc("/health/live", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"status":"ok"}`))
@@ -78,10 +84,8 @@ func newRouter(pool *pgxpool.Pool) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"status":"ready"}`))
 	})
-	mux.HandleFunc("/api/v1/summary", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		now := time.Now().UTC().Format(time.RFC3339)
-		fmt.Fprintf(w, `{"data":{"racks_total":0,"equipment_total":0,"targets":{"total":0,"available":0,"unavailable":0,"not_checked":0,"disabled":0,"stale":0}},"meta":{"server_time":"%s","computed_at":"%s"}}`, now, now)
-	})
+	mux.HandleFunc("POST /api/v1/auth/login", ah.Login)
+	mux.Handle("GET /api/v1/auth/me", mw.Require(http.HandlerFunc(ah.Me)))
+	mux.Handle("POST /api/v1/auth/logout", mw.Require(http.HandlerFunc(ah.Logout)))
 	return mux
 }
