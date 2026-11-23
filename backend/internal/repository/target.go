@@ -62,6 +62,30 @@ func (r *TargetRepo) Update(ctx context.Context, id int64, port *int, label *str
 	return err
 }
 
+func (r *TargetRepo) ListHistory(ctx context.Context, targetID int64) ([]map[string]any, error) {
+	rows, err := r.Pool.Query(ctx, `SELECT id, run_id, target_id, monitor_revision, settings_version, address_snapshot, port_snapshot, resolved_ip, status, started_at, finished_at, duration_ms, error_code, error_text FROM probe_result WHERE target_id=$1 ORDER BY finished_at DESC, id DESC`, targetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []map[string]any
+	for rows.Next() {
+		var id, target int64
+		var runID string
+		var monRev, settVer int64
+		var addr string
+		var port int
+		var resolvedIP *string
+		var status, started, finished string
+		var dur int
+		var errCode, errText *string
+		if err := rows.Scan(&id, &runID, &target, &monRev, &settVer, &addr, &port, &resolvedIP, &status, &started, &finished, &dur, &errCode, &errText); err != nil {
+			return nil, err
+		}
+		items = append(items, map[string]any{"id": id, "run_id": runID, "target_id": target, "monitor_revision": monRev, "settings_version": settVer, "address_snapshot": addr, "port_snapshot": port, "resolved_ip": resolvedIP, "status": status, "started_at": started, "finished_at": finished, "duration_ms": dur, "error_code": errCode, "error_text": errText})
+	}
+	return items, nil
+}
 func (r *TargetRepo) Delete(ctx context.Context, id int64, ver int64) error {
 	ct, err := r.Pool.Exec(ctx, `DELETE FROM tcp_target WHERE id=$1 AND version=$2`, id, ver)
 	if err != nil {

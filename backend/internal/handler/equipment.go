@@ -199,6 +199,7 @@ func (h *TargetHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *TargetHandler) History(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	items, _ := h.Repo.ListHistory(r.Context(), id)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"target_id": id, "items": []any{}}, "meta": map[string]any{"server_time": timeNow(), "page": 1, "page_size": 20, "total": 0, "retention_cutoff": timeNow()}})
+	json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"target_id": id, "items": items}, "meta": map[string]any{"server_time": timeNow(), "page": 1, "page_size": 20, "total": len(items), "retention_cutoff": timeNow()}})
 }
