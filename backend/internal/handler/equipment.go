@@ -20,7 +20,22 @@ func (h *EquipmentHandler) List(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	page := atoi(r.URL.Query().Get("page"), 1)
 	size := atoi(r.URL.Query().Get("page_size"), 20)
-	items, total, err := h.Repo.List(r.Context(), q, nil, nil, nil, page, size)
+	var rackID *int64
+	if v := r.URL.Query().Get("rack_id"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			rackID = &n
+		}
+	}
+	var typ *string
+	if v := r.URL.Query().Get("type"); v != "" {
+		typ = &v
+	}
+	var mon *bool
+	if v := r.URL.Query().Get("monitoring_enabled"); v != "" {
+		b := v == "true"
+		mon = &b
+	}
+	items, total, err := h.Repo.List(r.Context(), q, rackID, typ, mon, page, size)
 	if err != nil {
 		WriteErr(w, r, 500, "INTERNAL_ERROR", "internal")
 		return
