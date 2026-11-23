@@ -20,7 +20,6 @@ import (
 
 // migrations loaded from ./migrations at runtime
 
-
 func main() {
 	cfg := config.Load()
 	ctx := context.Background()

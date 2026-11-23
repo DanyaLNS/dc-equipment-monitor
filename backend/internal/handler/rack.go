@@ -47,7 +47,7 @@ func (h *RackHandler) Create(w http.ResponseWriter, r *http.Request) {
 		WriteErr(w, r, 500, "INTERNAL_ERROR", "internal")
 		return
 	}
-	w.Header().Set("ETag", "\"rack-"+strconv.FormatInt(id,10)+"-v1\"")
+	w.Header().Set("ETag", "\"rack-"+strconv.FormatInt(id, 10)+"-v1\"")
 	w.WriteHeader(201)
 	json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"id": id}, "meta": map[string]any{"server_time": timeNow()}})
 }
@@ -59,7 +59,7 @@ func (h *RackHandler) Get(w http.ResponseWriter, r *http.Request) {
 		WriteErr(w, r, 404, "NOT_FOUND", "not found")
 		return
 	}
-	w.Header().Set("ETag", "\"rack-"+strconv.FormatInt(id,10)+"-v"+strconv.FormatInt(ver,10)+"\"")
+	w.Header().Set("ETag", "\"rack-"+strconv.FormatInt(id, 10)+"-v"+strconv.FormatInt(ver, 10)+"\"")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"data": m, "meta": map[string]any{"server_time": timeNow()}})
 }

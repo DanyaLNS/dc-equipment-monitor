@@ -57,8 +57,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"data": map[string]any{
-			"user":              map[string]any{"id": id, "login": body.Login, "role": role},
-			"csrf_token":        csrf,
+			"user":               map[string]any{"id": id, "login": body.Login, "role": role},
+			"csrf_token":         csrf,
 			"session_expires_at": time.Now().Add(8*time.Hour + 30*time.Minute).UTC().Format(time.RFC3339),
 		},
 		"meta": map[string]any{"server_time": time.Now().UTC().Format(time.RFC3339)},
@@ -76,8 +76,8 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"data": map[string]any{
-			"user":              map[string]any{"id": uid, "login": login, "role": role},
-			"csrf_token":        "csrf",
+			"user":               map[string]any{"id": uid, "login": login, "role": role},
+			"csrf_token":         "csrf",
 			"session_expires_at": time.Now().Add(8 * time.Hour).UTC().Format(time.RFC3339),
 		},
 		"meta": map[string]any{"server_time": time.Now().UTC().Format(time.RFC3339)},

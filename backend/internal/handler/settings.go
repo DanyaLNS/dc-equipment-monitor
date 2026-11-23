@@ -23,7 +23,7 @@ func (h *SettingsHandler) Get(w http.ResponseWriter, r *http.Request) {
 		WriteErr(w, r, 500, "INTERNAL_ERROR", "internal")
 		return
 	}
-	w.Header().Set("ETag", "\"settings-v"+strconv.FormatInt(ver,10)+"\"")
+	w.Header().Set("ETag", "\"settings-v"+strconv.FormatInt(ver, 10)+"\"")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"data": m, "meta": map[string]any{"server_time": timeNow()}})
 }
@@ -53,9 +53,9 @@ func (h *SettingsHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 type SummaryHandler struct {
-	Pool *pgxpool.Pool
-	mu   sync.Mutex
-	cache map[string]any
+	Pool    *pgxpool.Pool
+	mu      sync.Mutex
+	cache   map[string]any
 	cacheAt time.Time
 }
 

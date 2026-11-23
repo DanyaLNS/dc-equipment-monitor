@@ -11,8 +11,8 @@ import (
 )
 
 type EquipmentHandler struct {
-	Pool *pgxpool.Pool
-	Repo *repository.EquipmentRepo
+	Pool    *pgxpool.Pool
+	Repo    *repository.EquipmentRepo
 	Targets *repository.TargetRepo
 }
 
@@ -66,7 +66,7 @@ func (h *EquipmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		WriteErr(w, r, 500, "INTERNAL_ERROR", "internal")
 		return
 	}
-	w.Header().Set("ETag", "\"equipment-"+strconv.FormatInt(id,10)+"-v1\"")
+	w.Header().Set("ETag", "\"equipment-"+strconv.FormatInt(id, 10)+"-v1\"")
 	w.WriteHeader(201)
 	json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"id": id}, "meta": map[string]any{"server_time": timeNow()}})
 }
@@ -78,7 +78,7 @@ func (h *EquipmentHandler) Get(w http.ResponseWriter, r *http.Request) {
 		WriteErr(w, r, 404, "NOT_FOUND", "not found")
 		return
 	}
-	w.Header().Set("ETag", "\"equipment-"+strconv.FormatInt(id,10)+"-v"+strconv.FormatInt(ver,10)+"\"")
+	w.Header().Set("ETag", "\"equipment-"+strconv.FormatInt(id, 10)+"-v"+strconv.FormatInt(ver, 10)+"\"")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"data": m, "meta": map[string]any{"server_time": timeNow()}})
 }
@@ -129,10 +129,10 @@ func (h *EquipmentHandler) View(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"data": map[string]any{
-			"equipment": m,
-			"rack":      map[string]any{"id": m["rack_id"], "name": m["rack_name"]},
+			"equipment":     m,
+			"rack":          map[string]any{"id": m["rack_id"], "name": m["rack_name"]},
 			"target_counts": map[string]any{"total": len(targets), "available": 0, "unavailable": 0, "not_checked": len(targets), "disabled": 0, "stale": 0},
-			"targets":   targets,
+			"targets":       targets,
 		},
 		"meta": map[string]any{"server_time": timeNow(), "page": 1, "page_size": 20, "total": len(targets)},
 	})
@@ -160,7 +160,7 @@ func (h *TargetHandler) Create(w http.ResponseWriter, r *http.Request) {
 		WriteErr(w, r, 500, "INTERNAL_ERROR", "internal")
 		return
 	}
-	w.Header().Set("ETag", "\"target-"+strconv.FormatInt(id,10)+"-v1\"")
+	w.Header().Set("ETag", "\"target-"+strconv.FormatInt(id, 10)+"-v1\"")
 	w.WriteHeader(201)
 	json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"id": id}, "meta": map[string]any{"server_time": timeNow()}})
 }
@@ -172,7 +172,7 @@ func (h *TargetHandler) Get(w http.ResponseWriter, r *http.Request) {
 		WriteErr(w, r, 404, "NOT_FOUND", "not found")
 		return
 	}
-	w.Header().Set("ETag", "\"target-"+strconv.FormatInt(id,10)+"-v"+strconv.FormatInt(ver,10)+"\"")
+	w.Header().Set("ETag", "\"target-"+strconv.FormatInt(id, 10)+"-v"+strconv.FormatInt(ver, 10)+"\"")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"data": m, "meta": map[string]any{"server_time": timeNow()}})
 }
